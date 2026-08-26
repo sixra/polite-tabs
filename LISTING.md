@@ -93,6 +93,12 @@ add-on transmits nothing: no network access, no content scripts, settings in `st
 > There are no content scripts, no host permissions, no network requests and no remote code.
 > The manifest declares data_collection_permissions: none.
 >
+> The one validator warning (KEY_FIREFOX_ANDROID_UNSUPPORTED_BY_MIN_VERSION) is expected. This
+> add-on is desktop only and deliberately omits gecko_android, but the linter falls back to
+> gecko.strict_min_version when that key is absent, so it compares data_collection_permissions
+> (Android 142) against 140. Adding gecko_android back would silence it while offering the
+> add-on on Android, where tabs.discard does not exist.
+>
 > To exercise it: open the toolbar popup, set the timeout to a few minutes under Settings,
 > switch away from a tab and wait. The badge counts tabs still loaded, so it falls, and the
 > popup lists the ones still using memory.
