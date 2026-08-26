@@ -1,0 +1,5 @@
+# Build output. web-ext names signed artifacts <name>-<version>.xpi, so match any.
+*.xpi
+web-ext-artifacts/
+
+.DS_Store

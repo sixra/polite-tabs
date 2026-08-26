@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Polite Tabs</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --fg: #1c1b22;
+    --muted: #5b5b66;
+    --bg: #ffffff;
+    --field: #ffffff;
+    --line: #e0e0e6;
+    --surface: #f4f4f7;
+    --border: #cfcfd8;
+    --accent: #0060df;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fg: #fbfbfe; --muted: #a8a8b3; --bg: #1c1b22;
+      --field: #2b2a33; --line: #3a3944; --surface: #26252e; --border: #52525e; --accent: #6ea8fe;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: .9rem;
+    width: 22rem;
+    max-width: 100%;
+    font: 13px/1.4 system-ui, sans-serif;
+    overflow-x: hidden;
+    scrollbar-gutter: stable;
+    color: var(--fg);
+    background: var(--bg);
+  }
+
+  .stats { display: flex; gap: 1.25rem; margin-bottom: .6rem; }
+  .stat b { display: block; font-size: 1.35rem; font-weight: 600; line-height: 1.1; }
+  .stat span { color: var(--muted); font-size: .8rem; }
+
+  #tabs { max-height: 15rem; overflow-y: auto; margin: 0; padding: 0; list-style: none; }
+  .more {
+    display: block; width: 100%;
+    margin: 0; padding: .3rem 0 .1rem;
+    font: inherit; color: var(--accent);
+    background: none; border: 0;
+    cursor: pointer; text-align: left;
+  }
+  .more[hidden] { display: none; }
+  #tabs:empty::after { content: "Nothing loaded."; color: var(--muted); }
+  .tab { display: flex; align-items: center; gap: .5rem; border-top: 1px solid var(--line); }
+  .tab:first-child { border-top: 0; }
+  .tab .title {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+    padding: .4rem 0;
+    background: none;
+    border: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .tab .title:hover { color: var(--accent); }
+  .tab .audio { color: var(--muted); flex: none; }
+  .tab .idle { color: var(--muted); font-variant-numeric: tabular-nums; flex: none; }
+  .tab .drop {
+    flex: none;
+    font: inherit;
+    color: var(--accent);
+    background: none;
+    border: 0;
+    padding: .2rem .3rem;
+    cursor: pointer;
+  }
+  .tab .drop:hover:not(:disabled) { text-decoration: underline; }
+  .tab .drop:disabled { opacity: .35; cursor: default; }
+
+  details { border-top: 1px solid var(--line); }
+  summary { cursor: pointer; padding: .5rem 0; font-weight: 600; }
+  summary::marker { color: var(--muted); }
+  /* Banded rather than ruled. Full bleed is safe here because sections are not in a
+     scroll container, unlike the tab list. */
+  section {
+    margin-inline: -.9rem;
+    padding: .55rem .9rem;
+  }
+  section:nth-of-type(odd) { background: var(--surface); }
+  h2 {
+    font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .07em;
+    color: var(--muted); margin: .6rem 0 .3rem;
+  }
+
+  label, .label { display: block; margin-bottom: .3rem; color: var(--muted); }
+  input, textarea, button.pill {
+    font: inherit;
+    color: var(--fg);
+    background: var(--field);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: .3rem .4rem;
+  }
+  .amount { display: flex; align-items: center; gap: .4rem; }
+  .amount input { width: 4.2rem; }
+  .amount[aria-disabled="true"] { opacity: .4; pointer-events: none; }
+  .manual { display: flex; align-items: center; gap: .45rem; margin: .5rem 0 0; color: var(--fg); }
+  .manual input { margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: .3rem; }
+  .chip {
+    margin: 0;
+    padding: .2rem .5rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--field);
+    cursor: pointer;
+    font-variant-numeric: tabular-nums;
+  }
+  /* The radio stays in the DOM for keyboard and screen readers, just not visible. */
+  .chip input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .chip:hover { border-color: var(--accent); }
+  .chip:has(:checked) {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--bg);
+    font-weight: 600;
+  }
+  .chip:has(:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .add-row { display: flex; gap: .35rem; }
+  .add-row input[type="text"] { flex: 1; min-width: 0; }
+  button.pill { cursor: pointer; font-weight: 500; }
+
+  ul.rows { list-style: none; margin: .45rem 0 0; padding: 0; }
+  ul.rows:empty { margin: 0; }
+  .row {
+    display: flex; align-items: center; gap: .5rem;
+    padding: .2rem .45rem; margin-bottom: .25rem;
+    border: 1px solid var(--border); border-radius: 4px;
+  }
+  .row span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  /* Grid-centred rather than padded: the multiplication sign sits on the maths
+     axis, so relying on the button's own line box leaves it riding high. */
+  .row button {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 1.3rem;
+    height: 1.3rem;
+    padding: 0;
+    line-height: 1;
+    font: inherit;
+    font-size: 1rem;
+    background: none;
+    border: 0;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .row button:hover { color: var(--accent); }
+
+  .group { display: flex; align-items: center; gap: .5rem; padding: .18rem 0; }
+  .group input { margin: 0; }
+  .swatch { width: .7rem; height: .7rem; border-radius: 50%; flex: none; background: var(--swatch, var(--muted)); }
+  #groups:empty::after { content: "No tab groups yet."; color: var(--muted); }
+
+  .hint { margin: .85rem 0 0; color: var(--muted); font-size: .76rem; font-style: italic; }
+  #tabs-hint { margin: .85rem 0 .55rem; }
+  .actions {
+    margin-left: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: .3rem;
+  }
+  /* Faded rather than hidden, so confirming a save never nudges the layout. */
+  #saved {
+    color: var(--muted);
+    font-size: .76rem;
+    font-style: italic;
+    opacity: 0;
+    transition: opacity .2s;
+  }
+  #saved.show { opacity: 1; }
+  #saved[hidden] { display: none; }
+</style>
+</head>
+<body>
+  <div class="stats">
+    <div class="stat"><b id="loaded">&nbsp;</b><span>loaded</span></div>
+    <div class="stat"><b id="unloaded">&nbsp;</b><span>unloaded</span></div>
+    <div class="actions">
+      <button id="unload-now" class="pill" type="button">Unload all</button>
+      <span id="saved" role="status">Saved</span>
+    </div>
+  </div>
+
+  <ul id="tabs" aria-label="Loaded tabs, most idle first"></ul>
+  <button id="tabs-more" class="more" type="button" hidden></button>
+  <p class="hint" id="tabs-hint"></p>
+
+  <details id="settings">
+    <summary>Settings</summary>
+    <section>
+      <h2>Timing</h2>
+      <span class="label" id="timeout-label">Unload a tab after</span>
+      <div class="amount">
+        <input id="amount" type="number" min="1" step="1"
+               aria-labelledby="timeout-label" aria-describedby="idle-hint">
+        <div id="units" class="chips" role="radiogroup" aria-label="Time unit"></div>
+      </div>
+      <label class="manual">
+        <input type="checkbox" id="manual-only">
+        Only unload when I ask
+      </label>
+      <p class="hint" id="idle-hint"></p>
+    </section>
+
+    <section>
+      <h2>Never unload these sites</h2>
+      <div class="add-row">
+          <input id="host-input" type="text" spellcheck="false" autocomplete="off"
+                 placeholder="example.com" aria-describedby="host-hint">
+          <button id="host-add" class="pill" type="button">Add</button>
+        </div>
+      <ul id="hosts" class="rows" aria-label="Sites that are never unloaded"></ul>
+      <button id="hosts-more" class="more" type="button" hidden></button>
+      <p class="hint" id="host-hint">URLs reduce to hostnames. Subdomains included.</p>
+    </section>
+
+    <section>
+      <h2>Never unload these groups</h2>
+      <div id="groups" role="group" aria-label="Tab groups that are never unloaded"></div>
+      <button id="groups-more" class="more" type="button" hidden></button>
+      <p class="hint">A ticked group stays loaded.</p>
+    </section>
+  </details>
+
+  <script src="shared.js"></script>
+  <script src="panel.js"></script>
+</body>
+</html>

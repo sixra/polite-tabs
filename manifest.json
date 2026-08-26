@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Polite Tabs",
+  "version": "1.0.1",
+  "description": "Unloads tabs you have not touched in a while, to free memory.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "politetabs@sixra.dev",
+      "strict_min_version": "140.0",
+      "data_collection_permissions": { "required": ["none"] }
+    }
+  },
+  "permissions": ["tabs", "tabGroups", "alarms", "storage", "menus"],
+  "icons": { "48": "icon.svg", "96": "icon.svg" },
+  "action": {
+    "default_title": "Polite Tabs",
+    "default_popup": "panel.html",
+    "default_icon": "icon.svg"
+  },
+  "commands": {
+    "unload-now": {
+      "suggested_key": { "default": "Alt+Shift+U" },
+      "description": "Unload all tabs"
+    },
+    "keep-site": {
+      "suggested_key": { "default": "Alt+Shift+K" },
+      "description": "Never unload this site"
+    }
+  },
+  "background": { "scripts": ["shared.js", "background.js"] },
+  "options_ui": { "page": "panel.html" }
+}

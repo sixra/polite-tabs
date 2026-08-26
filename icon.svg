@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <title>Polite Tabs</title>
+  <!-- Three tabs, fading as they are unloaded: the behaviour, drawn. -->
+  <g fill="#3B82F6">
+    <rect x="5" y="5" width="22" height="6" rx="3"/>
+    <rect x="5" y="13" width="22" height="6" rx="3" opacity=".5"/>
+    <rect x="5" y="21" width="22" height="6" rx="3" opacity=".22"/>
+  </g>
+</svg>
