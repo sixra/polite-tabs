@@ -51,7 +51,7 @@ function fill(key, items, row) {
 }
 
 async function refresh() {
-  settings = await browser.storage.local.get(DEFAULTS);
+  settings = await readSettings();
   renderTiming();
   showTiming();
   renderHosts();
@@ -143,6 +143,16 @@ function showTiming() {
     : `A tab unloads about ${timeoutLabel(from)} after you last used it.`;
 }
 
+// Both lists need one, and this is the only place PRESETS becomes markup.
+function presetSelect(current, { withDefault = false } = {}) {
+  const select = document.createElement('select');
+  if (withDefault) select.append(new Option('Default', ''));
+  for (const minutes of PRESETS) select.append(new Option(timeoutLabel(minutes), String(minutes)));
+
+  select.value = current === undefined ? '' : String(current);
+  return select;
+}
+
 /* Tabs */
 
 async function renderTabs() {
@@ -170,9 +180,15 @@ function tabRow(tab) {
     window.close();
   });
 
-  const idle = document.createElement('span');
-  idle.className = 'idle';
-  idle.textContent = sinceLabel(tab.lastAccessed);
+  // A title alone often does not say which site it is: "Inbox (23)", "Dashboard".
+  const host = document.createElement('span');
+  host.className = 'host';
+  host.textContent = [bareHostname(tab.url), sinceLabel(tab.lastAccessed)]
+    .filter(Boolean).join(' \u00b7 ');
+
+  const text = document.createElement('div');
+  text.className = 'text';
+  text.append(title, host);
 
   const drop = document.createElement('button');
   drop.className = 'drop';
@@ -190,7 +206,7 @@ function tabRow(tab) {
 
   const row = document.createElement('li');
   row.className = 'tab';
-  row.append(title, idle, drop);
+  row.append(text, drop);
 
   // Audible tabs can be unloaded, and doing so stops the sound, so mark which they are.
   if (tab.audible) {
@@ -198,7 +214,7 @@ function tabRow(tab) {
     audio.className = 'audio';
     audio.textContent = '\u266a';
     audio.title = 'Playing audio';
-    row.insertBefore(audio, idle);
+    host.prepend(audio, ' ');
   }
 
   return row;
@@ -219,8 +235,9 @@ function addHost() {
   // Unparseable input stays in the field to be corrected, rather than vanishing.
   if (!hostname) return;
 
-  if (!settings.keepLoaded.includes(hostname)) {
-    settings.keepLoaded.push(hostname);
+  // New entries start at never, which is what this list did before it had times.
+  if (!(hostname in settings.sites)) {
+    settings.sites[hostname] = 0;
     renderHosts();
     persist();
   }
@@ -229,23 +246,30 @@ function addHost() {
 }
 
 function renderHosts() {
-  fill('hosts', settings.keepLoaded, hostname => {
+  fill('hosts', Object.entries(settings.sites), ([hostname, minutes]) => {
     const name = document.createElement('span');
     name.textContent = hostname;
+
+    const select = presetSelect(minutes);
+    select.setAttribute('aria-label', `Unload ${hostname} after`);
+    select.addEventListener('change', () => {
+      settings.sites[hostname] = Number(select.value);
+      persist();
+    });
 
     const remove = document.createElement('button');
     remove.type = 'button';
     remove.textContent = '×';
     remove.setAttribute('aria-label', `Remove ${hostname}`);
     remove.addEventListener('click', () => {
-      settings.keepLoaded = settings.keepLoaded.filter(h => h !== hostname);
+      delete settings.sites[hostname];
       renderHosts();
       persist();
     });
 
     const row = document.createElement('li');
     row.className = 'row';
-    row.append(name, remove);
+    row.append(name, select, remove);
     return row;
   });
 }
@@ -257,23 +281,26 @@ async function renderGroups() {
   const found = (await browser.tabGroups?.query({})) ?? [];
 
   fill('groups', found, group => {
-    const box = document.createElement('input');
-    box.type = 'checkbox';
-    box.checked = settings.keepGroups.includes(group.id);
-    box.addEventListener('change', () => {
-      settings.keepGroups = box.checked
-        ? [...settings.keepGroups, group.id]
-        : settings.keepGroups.filter(id => id !== group.id);
-      persist();
-    });
+    const title = group.title || 'Untitled group';
 
     const swatch = document.createElement('span');
     swatch.className = 'swatch';
     swatch.style.setProperty('--swatch', group.color);
 
-    const row = document.createElement('label');
+    const name = document.createElement('span');
+    name.textContent = title;
+
+    const select = presetSelect(settings.groups[group.id], { withDefault: true });
+    select.setAttribute('aria-label', `Unload ${title} after`);
+    select.addEventListener('change', () => {
+      if (select.value === '') delete settings.groups[group.id];
+      else settings.groups[group.id] = Number(select.value);
+      persist();
+    });
+
+    const row = document.createElement('div');
     row.className = 'group';
-    row.append(box, swatch, group.title || 'Untitled group');
+    row.append(swatch, name, select);
     return row;
   });
 }

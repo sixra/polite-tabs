@@ -61,13 +61,17 @@ Idle time is the honest substitute, and it is the better predictor of what goes 
   Default 30 minutes.
 - **Only unload when I ask** turns the timer off entirely, including its alarm, leaving
   unloading to the button, the shortcut and the right-click menu.
-- **Never unload these sites**: type a hostname and press Enter or click Add. A full URL is
-  fine, it is reduced to its hostname as you add it, so you can see what was actually stored.
-  Subdomains are included, so `example.com` also covers `app.example.com`.
-- **Never unload these groups**: tick any tab group to exempt every tab in it. Zen folders are
-  tab groups, so they show up here. Group ids are derived from a creation timestamp that the
-  session store persists, so a ticked group stays ticked across restarts and renames; deleting
-  and recreating a group makes a new one.
+- **Site timeouts**: type a hostname and press Enter or click Add. A full URL is fine, it is
+  reduced to its hostname as you add it, so you can see what was actually stored. Subdomains are
+  included, so `example.com` also covers `app.example.com`. Each site gets its own timeout, from
+  5 minutes to a week, or Never. Added sites start at Never.
+- **Group timeouts**: give any tab group its own timeout, or leave it on *Default* to follow the
+  timing above. Zen folders are tab groups, so they show up here. Group ids are derived from a
+  creation timestamp that the session store persists, so a rule survives restarts and renames;
+  deleting and recreating a group makes a new one.
+
+A group rule beats a site rule, on the grounds that a group is something you assembled by hand
+while a site rule is a broad default.
 
 ### Seeing it work
 

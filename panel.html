@@ -51,11 +51,20 @@
   #tabs:empty::after { content: "Nothing loaded."; color: var(--muted); }
   .tab { display: flex; align-items: center; gap: .5rem; border-top: 1px solid var(--line); }
   .tab:first-child { border-top: 0; }
+  .tab .text { flex: 1; min-width: 0; padding: .35rem 0; }
+  .tab .host {
+    display: block;
+    color: var(--muted);
+    font-size: .8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   .tab .title {
-    flex: 1;
-    min-width: 0;
+    display: block;
+    width: 100%;
     text-align: left;
-    padding: .4rem 0;
+    padding: 0;
     background: none;
     border: 0;
     font: inherit;
@@ -66,7 +75,7 @@
     text-overflow: ellipsis;
   }
   .tab .title:hover { color: var(--accent); }
-  .tab .audio { color: var(--muted); flex: none; }
+  .tab .audio { color: var(--muted); }
   .tab .idle { color: var(--muted); font-variant-numeric: tabular-nums; flex: none; }
   .tab .drop {
     flex: none;
@@ -161,7 +170,17 @@
   .row button:hover { color: var(--accent); }
 
   .group { display: flex; align-items: center; gap: .5rem; padding: .18rem 0; }
-  .group input { margin: 0; }
+  .group span:not(.swatch) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row select, .group select {
+    flex: none;
+    font: inherit;
+    font-size: .82rem;
+    color: inherit;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: .05rem .1rem;
+  }
   .swatch { width: .7rem; height: .7rem; border-radius: 50%; flex: none; background: var(--swatch, var(--muted)); }
   #groups:empty::after { content: "No tab groups yet."; color: var(--muted); }
 
@@ -218,22 +237,22 @@
     </section>
 
     <section>
-      <h2>Never unload these sites</h2>
+      <h2>Site timeouts</h2>
       <div class="add-row">
           <input id="host-input" type="text" spellcheck="false" autocomplete="off"
                  placeholder="example.com" aria-describedby="host-hint">
           <button id="host-add" class="pill" type="button">Add</button>
         </div>
-      <ul id="hosts" class="rows" aria-label="Sites that are never unloaded"></ul>
+      <ul id="hosts" class="rows" aria-label="Per-site timeouts"></ul>
       <button id="hosts-more" class="more" type="button" hidden></button>
-      <p class="hint" id="host-hint">URLs reduce to hostnames. Subdomains included.</p>
+      <p class="hint" id="host-hint">URLs reduce to hostnames. Subdomains included. Added sites start at Never.</p>
     </section>
 
     <section>
-      <h2>Never unload these groups</h2>
-      <div id="groups" role="group" aria-label="Tab groups that are never unloaded"></div>
+      <h2>Group timeouts</h2>
+      <div id="groups" role="group" aria-label="Per-group timeouts"></div>
       <button id="groups-more" class="more" type="button" hidden></button>
-      <p class="hint">A ticked group stays loaded.</p>
+      <p class="hint">Groups left on Default follow the timing above.</p>
     </section>
   </details>
 

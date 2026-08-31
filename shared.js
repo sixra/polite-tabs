@@ -1,8 +1,56 @@
 const DEFAULTS = {
   idleMinutes: 30,
-  keepLoaded: [],
-  keepGroups: [],
+  sites: {},
+  groups: {},
 };
+
+// Offered on the per-site and per-group pickers. 0 is "never", an option like any other.
+const PRESETS = [5, 15, 30, 60, 240, 1440, 10080, 0];
+
+// The one place DEFAULTS is applied, so every caller sees rules in the same shape.
+// 1.0.x stored plain arrays under different names; those entries were all "never".
+async function readSettings() {
+  const stored = await browser.storage.local.get({ ...DEFAULTS, keepLoaded: [], keepGroups: [] });
+  const settings = {
+    idleMinutes: stored.idleMinutes,
+    sites: { ...neverRules(stored.keepLoaded), ...stored.sites },
+    groups: { ...neverRules(stored.keepGroups), ...stored.groups },
+  };
+
+  // Fold the old arrays in once and drop them. Leaving them would resurrect any entry
+  // the user deletes, since they are merged back in on every read.
+  if (stored.keepLoaded.length || stored.keepGroups.length) {
+    await browser.storage.local.set(settings);
+    await browser.storage.local.remove(['keepLoaded', 'keepGroups']);
+  }
+
+  return settings;
+}
+
+function neverRules(list) {
+  return Object.fromEntries((list ?? []).map(key => [key, 0]));
+}
+
+// undefined when nothing matches, which is what lets the caller tell an explicit
+// "never" rule apart from the global timer being off.
+function ruleFor(tab, { sites, groups }) {
+  // groupId is -1 on an ungrouped tab, so a stray rule under that key must not match.
+  if (tab.groupId != null && tab.groupId !== -1 && tab.groupId in groups) {
+    // A group is something you built by hand, so it beats a site rule, which is broader.
+    return groups[tab.groupId];
+  }
+
+  const hostname = bareHostname(tab.url);
+  const match = Object.keys(sites).find(h => hostname === h || hostname.endsWith('.' + h));
+  return match === undefined ? undefined : sites[match];
+}
+
+// Drives the sweep cadence, so a 5 minute group rule is not checked on a 2 week schedule.
+// Zeroes drop out: "never" needs no waking.
+function shortestTimeout({ idleMinutes, sites, groups }) {
+  const live = [idleMinutes, ...Object.values(sites), ...Object.values(groups)].filter(Boolean);
+  return live.length ? Math.min(...live) : 0;
+}
 
 // Both the stored list and the tab URL go through this, so a pasted URL still matches.
 function bareHostname(value) {

@@ -2,6 +2,20 @@
 
 Notable changes, newest first. Versions follow [semver](https://semver.org).
 
+## 1.1.0 (unreleased)
+
+### Added
+
+- **Per-site and per-group timeouts.** A site or tab group can now have its own time rather than
+  only being exempt: pick from 5 minutes through 1 week, or Never. Groups left on *Default*
+  follow the main timing. A group rule wins over a site rule, since a group is something you
+  built by hand.
+
+### Changed
+
+- **Tab rows show the site.** The hostname and idle time now sit under the title, because a title
+  alone often does not say which site it is ("Inbox (23)", "Dashboard").
+
 ## 1.0.1 (unreleased)
 
 ### Changed

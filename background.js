@@ -38,9 +38,9 @@ browser.menus.onShown.addListener(async (info, tab) => {
     return;
   }
 
-  const { keepLoaded } = await browser.storage.local.get(DEFAULTS);
+  const { sites } = await readSettings();
   browser.menus.update(KEEP_SITE, {
-    title: keepLoaded.includes(hostname) ? `Allow unloading ${hostname}` : `Never unload ${hostname}`,
+    title: sites[hostname] === 0 ? `Allow unloading ${hostname}` : `Never unload ${hostname}`,
     enabled: true,
   });
   browser.menus.update(KEEP_TAB, {
@@ -55,6 +55,15 @@ browser.menus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId === KEEP_TAB) {
     await browser.tabs.update(tab.id, { autoDiscardable: tab.autoDiscardable === false });
   }
+});
+
+browser.tabGroups?.onRemoved.addListener(async ({ id }) => {
+  const { groups } = await readSettings();
+  if (!(id in groups)) return;
+
+  const next = { ...groups };
+  delete next[id];
+  await browser.storage.local.set({ groups: next });
 });
 
 browser.runtime.onMessage.addListener(message => {
@@ -73,12 +82,13 @@ async function toggleSite(tab) {
   const hostname = bareHostname(tab?.url ?? '');
   if (!hostname) return;
 
-  const { keepLoaded } = await browser.storage.local.get(DEFAULTS);
-  await browser.storage.local.set({
-    keepLoaded: keepLoaded.includes(hostname)
-      ? keepLoaded.filter(h => h !== hostname)
-      : [...keepLoaded, hostname],
-  });
+  // The menu is a two-way switch, so it only ever writes "never" or clears the rule.
+  // Anything more granular belongs in the panel.
+  const { sites } = await readSettings();
+  const next = { ...sites };
+  if (next[hostname] === 0) delete next[hostname];
+  else next[hostname] = 0;
+  await browser.storage.local.set({ sites: next });
 }
 
 async function refreshBadge() {
@@ -91,11 +101,12 @@ async function refreshBadge() {
 }
 
 async function reschedule() {
-  const { idleMinutes } = await browser.storage.local.get(DEFAULTS);
-  // Never means never: drop the alarm rather than waking up to decide not to act.
-  if (!idleMinutes) return browser.alarms.clear(ALARM);
+  // The shortest live rule sets the cadence, so a 5 minute group is not checked hourly.
+  const shortest = shortestTimeout(await readSettings());
+  // Nothing to wake for: every timeout is "never".
+  if (!shortest) return browser.alarms.clear(ALARM);
 
-  const periodInMinutes = sweepMinutes(idleMinutes);
+  const periodInMinutes = sweepMinutes(shortest);
 
   // create() restarts the countdown, so leave an already-correct alarm alone.
   const existing = await browser.alarms.get(ALARM);
@@ -104,22 +115,24 @@ async function reschedule() {
   browser.alarms.create(ALARM, { periodInMinutes });
 }
 
-function shouldUnload(tab, cutoff, { keepLoaded, keepGroups }) {
+function shouldUnload(tab, now, settings, ignoreIdle) {
   // autoDiscardable only stops the browser's own unloading, so honour it here too.
   if (tab.autoDiscardable === false) return false;
-  if (!tab.lastAccessed || tab.lastAccessed > cutoff) return false;
-  if (keepGroups.includes(tab.groupId)) return false;
 
-  const hostname = bareHostname(tab.url);
-  return !keepLoaded.some(h => hostname === h || hostname.endsWith('.' + h));
+  // A rule of 0 means never, and outranks "unload all". The global timer being off
+  // does not, which is why this asks for the rule rather than the effective timeout.
+  const rule = ruleFor(tab, settings);
+  if (rule === 0) return false;
+  if (ignoreIdle) return true;
+
+  const minutes = rule ?? settings.idleMinutes;
+  if (!minutes) return false;
+  return !!tab.lastAccessed && tab.lastAccessed <= now - minutes * 60 * 1000;
 }
 
 async function sweep({ ignoreIdle = false } = {}) {
-  const settings = await browser.storage.local.get(DEFAULTS);
-  if (!ignoreIdle && !settings.idleMinutes) return;
-
-  // Infinity means every tab is old enough, which is what "unload now" asks for.
-  const cutoff = ignoreIdle ? Infinity : Date.now() - settings.idleMinutes * 60 * 1000;
+  const settings = await readSettings();
+  const now = Date.now();
 
   const tabs = await browser.tabs.query({
     url: ['http://*/*', 'https://*/*'],
@@ -129,7 +142,7 @@ async function sweep({ ignoreIdle = false } = {}) {
   });
 
   for (const tab of tabs) {
-    if (!shouldUnload(tab, cutoff, settings)) continue;
+    if (!shouldUnload(tab, now, settings, ignoreIdle)) continue;
     // Only guards the race where the tab closed between query and discard.
     await browser.tabs.discard(tab.id).catch(() => {});
   }
