@@ -81,6 +81,9 @@ add-on transmits nothing: no network access, no content scripts, settings in `st
 > or generated, so the package contents are identical to the sources and no source upload is
 > required.
 >
+> Source, matching this version exactly:
+> https://github.com/sixra/polite-tabs at tag v1.1.0
+>
 > Why each permission is needed:
 >
 > - tabs: reads lastAccessed, url and discarded state to decide which tabs to unload, and
