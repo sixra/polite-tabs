@@ -5,7 +5,7 @@ const DEFAULTS = {
 };
 
 // Offered on the per-site and per-group pickers. 0 is "never", an option like any other.
-const PRESETS = [5, 15, 30, 60, 240, 1440, 10080, 0];
+const PRESETS = [5, 15, 30, 60, 120, 240, 480, 1440, 10080, 0];
 
 // The one place DEFAULTS is applied, so every caller sees rules in the same shape.
 // 1.0.x stored plain arrays under different names; those entries were all "never".
@@ -72,16 +72,11 @@ function bareHostname(value) {
 // because it commonly means month.
 const UNITS = [[1, 'minute', 'min'], [60, 'hour', 'hour'], [1440, 'day', 'day'], [10080, 'week', 'week']];
 
-function splitTimeout(minutes) {
-  // findLast, so the largest evenly dividing unit wins: 4320 reads as 3 days, not 4320 minutes.
-  const [size, noun] = UNITS.findLast(([unit]) => minutes % unit === 0);
-  return { count: minutes / size, size, noun };
-}
-
 function timeoutLabel(minutes) {
   if (!minutes) return 'Never';
-  const { count, noun } = splitTimeout(minutes);
-  return plural(count, noun);
+  // findLast, so the largest evenly dividing unit wins: 4320 reads as 3 days, not 4320 minutes.
+  const [size, noun] = UNITS.findLast(([unit]) => minutes % unit === 0);
+  return plural(minutes / size, noun);
 }
 
 function plural(count, noun) {

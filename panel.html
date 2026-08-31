@@ -76,7 +76,6 @@
   }
   .tab .title:hover { color: var(--accent); }
   .tab .audio { color: var(--muted); }
-  .tab .idle { color: var(--muted); font-variant-numeric: tabular-nums; flex: none; }
   .tab .drop {
     flex: none;
     font: inherit;
@@ -113,31 +112,6 @@
     border-radius: 4px;
     padding: .3rem .4rem;
   }
-  .amount { display: flex; align-items: center; gap: .4rem; }
-  .amount input { width: 4.2rem; }
-  .amount[aria-disabled="true"] { opacity: .4; pointer-events: none; }
-  .manual { display: flex; align-items: center; gap: .45rem; margin: .5rem 0 0; color: var(--fg); }
-  .manual input { margin: 0; }
-  .chips { display: flex; flex-wrap: wrap; gap: .3rem; }
-  .chip {
-    margin: 0;
-    padding: .2rem .5rem;
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    background: var(--field);
-    cursor: pointer;
-    font-variant-numeric: tabular-nums;
-  }
-  /* The radio stays in the DOM for keyboard and screen readers, just not visible. */
-  .chip input { position: absolute; opacity: 0; width: 0; height: 0; }
-  .chip:hover { border-color: var(--accent); }
-  .chip:has(:checked) {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--bg);
-    font-weight: 600;
-  }
-  .chip:has(:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
   .add-row { display: flex; gap: .35rem; }
   .add-row input[type="text"] { flex: 1; min-width: 0; }
   button.pill { cursor: pointer; font-weight: 500; }
@@ -171,7 +145,8 @@
 
   .group { display: flex; align-items: center; gap: .5rem; padding: .18rem 0; }
   .group span:not(.swatch) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .row select, .group select {
+  #idle { display: block; margin-top: .35rem; }
+  #idle, .row select, .group select {
     flex: none;
     font: inherit;
     font-size: .82rem;
@@ -224,15 +199,7 @@
     <section>
       <h2>Timing</h2>
       <span class="label" id="timeout-label">Unload a tab after</span>
-      <div class="amount">
-        <input id="amount" type="number" min="1" step="1"
-               aria-labelledby="timeout-label" aria-describedby="idle-hint">
-        <div id="units" class="chips" role="radiogroup" aria-label="Time unit"></div>
-      </div>
-      <label class="manual">
-        <input type="checkbox" id="manual-only">
-        Only unload when I ask
-      </label>
+      <select id="idle" aria-labelledby="timeout-label" aria-describedby="idle-hint"></select>
       <p class="hint" id="idle-hint"></p>
     </section>
 

@@ -31,9 +31,9 @@ Max 250 characters, and **URLs are rejected**: addons-server declares
 > Nothing is closed and nothing is lost. An unloaded tab stays where it is and reloads when
 > you click it, with your scroll position and anything you typed still there.
 >
-> It works as soon as you install it, unloading after 30 minutes. Set that anywhere from a few
-> minutes to a few weeks, or switch the timer off and unload only when you ask. Individual sites
-> and tab groups can have a timeout of their own, or never unload at all.
+> It works as soon as you install it, unloading after 30 minutes. Set that anywhere from five
+> minutes to a week, or switch the timer off and unload only when you ask. Individual sites and
+> tab groups can have a timeout of their own, or never unload at all.
 >
 > Never unloaded: the tab you are looking at, tabs playing audio, tabs with unsaved changes,
 > and any site or tab group you exempt.

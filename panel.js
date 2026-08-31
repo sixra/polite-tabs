@@ -4,19 +4,12 @@ const el = id => document.querySelector(`#${id}`);
 // rather than waiting for a Save button the user may never reach.
 let settings = { ...DEFAULTS };
 
-// Capped on the count rather than the total, so switching unit never rewrites the
-// number. 999 weeks is ~19 years, and it keeps the product inside a safe integer.
-const MAX_COUNT = 999;
-
 // Every list starts as a shortlist; long ones hide behind their own toggle. The tab
 // list is the reason the popup gets opened, so it shows more than the settings lists.
 const SHORTLIST = { tabs: 4, hosts: 2, groups: 2 };
 const expanded = { tabs: false, hosts: false, groups: false };
 
-el('amount').max = MAX_COUNT;
-el('amount').addEventListener('change', applyTiming);
-el('units').addEventListener('change', applyTiming);
-el('manual-only').addEventListener('change', applyTiming);
+el('idle').addEventListener('change', applyTiming);
 
 el('unload-now').addEventListener('click', async () => {
   await browser.runtime.sendMessage({ type: 'unload-now' });
@@ -68,63 +61,11 @@ async function persist() {
 }
 
 function renderTiming() {
-  const { count, size } = splitTimeout(settings.idleMinutes || DEFAULTS.idleMinutes);
-
-  el('amount').value = count;
-  el('manual-only').checked = !settings.idleMinutes;
-
-  el('units').replaceChildren(...UNITS.map(([unit, , label]) => {
-    const radio = document.createElement('input');
-    radio.type = 'radio';
-    radio.name = 'unit';
-    radio.value = unit;
-    radio.checked = unit === size;
-
-    const chip = document.createElement('label');
-    chip.className = 'chip';
-    chip.append(radio, label);
-    return chip;
-  }));
-
-  describeUnits();
-  setTimingEnabled(!!settings.idleMinutes);
-}
-
-// Each unit says what picking it would mean, rather than restating its own name.
-function describeUnits() {
-  const count = amountTyped();
-
-  for (const chip of el('units').querySelectorAll('.chip')) {
-    const size = Number(chip.querySelector('input').value);
-    const [, noun] = UNITS.find(([unit]) => unit === size);
-    chip.title = plural(count, noun);
-  }
-}
-
-function amountTyped() {
-  return Math.min(MAX_COUNT, Math.max(1, Math.round(Number(el('amount').value)) || 1));
-}
-
-// The amount is meaningless while unloading is manual, so put it out of reach.
-function setTimingEnabled(enabled) {
-  document.querySelector('.amount').setAttribute('aria-disabled', String(!enabled));
+  fillPresets(el('idle'), settings.idleMinutes, { zeroLabel: 'Only when I ask' });
 }
 
 function applyTiming() {
-  const manual = el('manual-only').checked;
-
-  if (manual) {
-    settings.idleMinutes = 0;
-  } else {
-    const size = Number(el('units').querySelector(':checked').value);
-    const count = amountTyped();
-
-    settings.idleMinutes = count * size;
-    if (count !== Number(el('amount').value)) el('amount').value = count;
-    describeUnits();
-  }
-
-  setTimingEnabled(!manual);
+  settings.idleMinutes = Number(el('idle').value);
   showTiming();
   persist();
 }
@@ -143,14 +84,26 @@ function showTiming() {
     : `A tab unloads about ${timeoutLabel(from)} after you last used it.`;
 }
 
-// Both lists need one, and this is the only place PRESETS becomes markup.
-function presetSelect(current, { withDefault = false } = {}) {
-  const select = document.createElement('select');
-  if (withDefault) select.append(new Option('Default', ''));
-  for (const minutes of PRESETS) select.append(new Option(timeoutLabel(minutes), String(minutes)));
+// The only place PRESETS becomes markup, for the global control and both row kinds.
+// zeroLabel differs because the same 0 means different things: a row rule of "never"
+// survives Unload all, while the global timer being off does not.
+function fillPresets(select, current, { withDefault = false, zeroLabel = 'Never' } = {}) {
+  // A value stored by an older build stays selectable rather than being silently rewritten.
+  const times = [...new Set([...PRESETS.filter(Boolean), ...(current ? [current] : [])])]
+    .sort((a, b) => a - b);
+
+  select.replaceChildren(
+    ...(withDefault ? [new Option('Default', '')] : []),
+    ...times.map(minutes => new Option(timeoutLabel(minutes), String(minutes))),
+    new Option(zeroLabel, '0'),
+  );
 
   select.value = current === undefined ? '' : String(current);
   return select;
+}
+
+function presetSelect(current, options) {
+  return fillPresets(document.createElement('select'), current, options);
 }
 
 /* Tabs */

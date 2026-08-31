@@ -13,10 +13,13 @@ Notable changes, newest first. Versions follow [semver](https://semver.org).
 
 ### Changed
 
+- **One timeout control everywhere.** The main timing is now the same list of choices the
+  per-site and per-group rows use, replacing the number field and unit buttons. *Only unload
+  when I ask* moved into that list, so the checkbox is gone.
 - **Tab rows show the site.** The hostname and idle time now sit under the title, because a title
   alone often does not say which site it is ("Inbox (23)", "Dashboard").
 
-## 1.0.1 (unreleased)
+## 1.0.1 (2026-08-26)
 
 ### Changed
 

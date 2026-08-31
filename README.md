@@ -57,10 +57,9 @@ It deliberately does not show per-tab memory. Firefox exposes no such API to ext
 add-ons that show it inject a script into every page you visit, which this one refuses to do.
 Idle time is the honest substitute, and it is the better predictor of what goes next anyway.
 
-- **Unload a tab after**: a number plus a unit, minutes through weeks, up to 999 of any unit.
-  Default 30 minutes.
-- **Only unload when I ask** turns the timer off entirely, including its alarm, leaving
-  unloading to the button, the shortcut and the right-click menu.
+- **Unload a tab after**: 5 minutes through 1 week, or *Only when I ask*. Default 30 minutes.
+  The choices are fixed rather than free-form because the sweep runs at up to a quarter of the
+  timeout, so a value like 45 minutes could not be honoured to the minute anyway.
 - **Site timeouts**: type a hostname and press Enter or click Add. A full URL is fine, it is
   reduced to its hostname as you add it, so you can see what was actually stored. Subdomains are
   included, so `example.com` also covers `app.example.com`. Each site gets its own timeout, from
