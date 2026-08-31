@@ -113,14 +113,19 @@ AMO should be identical to this source.
 # an .xpi is a zip
 unzip -d published polite_tabs-*.xpi
 
-# compare against a checkout of the matching tag
-for f in manifest.json shared.js background.js panel.html panel.js icon.svg LICENSE README.md; do
+# every file except the manifest is byte for byte identical
+for f in shared.js background.js panel.html panel.js icon.svg LICENSE README.md; do
   cmp "$f" "published/$f" && echo "$f ok"
 done
+
+# Mozilla reformats manifest.json while signing, so compare it as JSON rather than as bytes
+diff <(python3 -m json.tool manifest.json) <(python3 -m json.tool published/manifest.json) \
+  && echo "manifest.json ok"
 ```
 
-Everything should match byte for byte. `published/META-INF/` is Mozilla's signature and has no
-counterpart here.
+Signing rewrites `manifest.json` with different whitespace, which is why it is compared parsed
+rather than raw; the keys and values are unchanged. Everything else matches byte for byte.
+`published/META-INF/` is Mozilla's signature and has no counterpart here.
 
 Check out the tag matching the version you downloaded, not `main`: docs move between releases,
 so comparing a released package against the tip will flag `README.md` even when every line of
