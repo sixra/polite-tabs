@@ -100,6 +100,7 @@ add-on transmits nothing: no network access, no content scripts, settings in `st
 > (Android 142) against 140. Adding gecko_android back would silence it while offering the
 > add-on on Android, where tabs.discard does not exist.
 >
-> To exercise it: open the toolbar popup, set the timeout to a few minutes under Settings,
-> switch away from a tab and wait. The badge counts tabs still loaded, so it falls, and the
-> popup lists the ones still using memory.
+> To exercise it: open the toolbar popup, set the timeout to 5 minutes under Settings, switch
+> away from a tab and wait. The badge counts tabs still loaded, so it falls, and the popup lists
+> the ones still using memory. Settings also lets a single site or tab group take a different
+> timeout, or never unload.
